@@ -1,0 +1,10 @@
+numpy
+pandas
+pillow
+pyyaml
+tqdm
+rapidfuzz
+opencv-python-headless
+scikit-learn
+pytest
+paddleocr

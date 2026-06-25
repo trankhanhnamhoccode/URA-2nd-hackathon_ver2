@@ -1,0 +1,29 @@
+phase: phase2
+
+input:
+  images_dir: data/samples/sample_images
+  test_csv: data/samples/sample_test.csv
+
+output:
+  submission_path: outputs/submissions/debug_submission.csv
+  checkpoint_path: outputs/checkpoints/debug_checkpoint.csv
+  audit_path: outputs/audits/debug_audit.csv
+
+runtime:
+  mode: debug
+  device: cpu
+  save_every: 5
+  force_reocr: true
+  limit: null
+  start_index: 0
+
+ocr:
+  enabled: false
+
+product:
+  enabled: false
+
+debug:
+  enabled: true
+  save_debug_images: true
+  verbose: true

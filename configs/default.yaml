@@ -1,0 +1,47 @@
+phase: phase2
+
+input:
+  images_dir: data/raw/test_images
+  test_csv: data/raw/test.csv
+
+output:
+  submission_path: outputs/submissions/submission.csv
+  checkpoint_path: outputs/checkpoints/checkpoint.csv
+  audit_path: outputs/audits/audit.csv
+
+submission:
+  phase1_columns:
+    - image_id
+    - ocr_text
+    - product_name
+
+  phase2_columns:
+    - image_id
+    - ocr_text
+    - brand_name
+    - product_name
+
+runtime:
+  mode: balanced
+  device: cpu
+  save_every: 20
+  force_reocr: false
+  limit: null
+  start_index: 0
+
+ocr:
+  enabled: false
+  engine: paddle
+  use_vietocr_rescue: false
+
+product:
+  enabled: false
+  use_rules: true
+  use_fuzzy: true
+  use_phobert: false
+  use_visual: false
+
+debug:
+  enabled: false
+  save_debug_images: false
+  verbose: true

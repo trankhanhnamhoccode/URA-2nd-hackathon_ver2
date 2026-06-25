@@ -1,0 +1,8 @@
+numpy
+pandas
+pillow
+pyyaml
+tqdm
+rapidfuzz
+opencv-python
+scikit-learn

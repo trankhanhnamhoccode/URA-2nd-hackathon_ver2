@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data - do not commit large/private datasets
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/samples/
+!data/samples/**
+
+# Models - do not commit model weights
+models/*
+!models/README.md
+!models/.gitkeep
+
+# Outputs - do not commit generated artifacts
+outputs/*
+!outputs/.gitkeep
+!outputs/submissions/.gitkeep
+!outputs/checkpoints/.gitkeep
+!outputs/audits/.gitkeep
+!outputs/debug_images/.gitkeep
+!outputs/logs/.gitkeep
+
+# Kaggle outputs
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# Large model/checkpoint files
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.pdparams
+*.pdmodel
+*.pdiparams
+*.pdopt
