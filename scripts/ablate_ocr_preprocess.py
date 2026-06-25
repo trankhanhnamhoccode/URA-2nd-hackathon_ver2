@@ -103,13 +103,54 @@ def parse_args():
     return parser.parse_args()
 
 
+def safe_import_paddleocr(hide_torch: bool = True):
+    """
+    Kaggle fix:
+    PaddleOCR 3.x imports PaddleX -> ModelScope.
+    ModelScope may probe/import torch during import.
+    Some Kaggle runtimes have Torch CUDA/NCCL mismatch:
+        libtorch_cuda.so: undefined symbol: ncclCommShrink
+
+    For PaddleOCR inference we do not need torch, so during PaddleOCR import
+    only, hide torch from importlib.util.find_spec().
+    """
+    import sys
+    import importlib.util as importlib_util
+
+    if "paddleocr" in sys.modules:
+        import paddleocr
+        from paddleocr import PaddleOCR
+        return paddleocr, PaddleOCR
+
+    if not hide_torch:
+        import paddleocr
+        from paddleocr import PaddleOCR
+        return paddleocr, PaddleOCR
+
+    original_find_spec = importlib_util.find_spec
+
+    def patched_find_spec(name, *args, **kwargs):
+        if name == "torch" or name.startswith("torch."):
+            return None
+        return original_find_spec(name, *args, **kwargs)
+
+    importlib_util.find_spec = patched_find_spec
+
+    try:
+        import paddleocr
+        from paddleocr import PaddleOCR
+        return paddleocr, PaddleOCR
+    finally:
+        importlib_util.find_spec = original_find_spec
+
+
 def create_paddle_ocr(lang: str = "vi", device: str = "gpu"):
     """
     Create PaddleOCR object with compatibility fallbacks.
 
     PaddleOCR APIs have changed across versions, so we try a few safe configs.
     """
-    from paddleocr import PaddleOCR
+    _, PaddleOCR = safe_import_paddleocr(hide_torch=True)
 
     configs = [
         {
@@ -118,9 +159,11 @@ def create_paddle_ocr(lang: str = "vi", device: str = "gpu"):
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
             "use_textline_orientation": False,
+            "engine": "paddle",
         },
         {
             "lang": lang,
+            "device": device,
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
             "use_textline_orientation": False,
@@ -146,7 +189,9 @@ def create_paddle_ocr(lang: str = "vi", device: str = "gpu"):
     for cfg in configs:
         try:
             print(f"[INFO] Trying PaddleOCR config: {cfg}")
-            return PaddleOCR(**cfg)
+            reader = PaddleOCR(**cfg)
+            print("[INFO] PaddleOCR loaded OK")
+            return reader
         except Exception as e:
             last_error = e
             print(f"[WARN] PaddleOCR config failed: {type(e).__name__}: {e}")
