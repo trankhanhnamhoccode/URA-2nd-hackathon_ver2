@@ -14,10 +14,12 @@ from .transforms import (
     invert_rgb,
     maybe_invert_for_dark_bg,
     make_preprocess_variants,
+    crop_vertical_band,
 )
 
 __all__ = [
     "get_image_quality",
+    "crop_vertical_band",
     "resize_long_side",
     "apply_clahe_rgb",
     "autocontrast_rgb",

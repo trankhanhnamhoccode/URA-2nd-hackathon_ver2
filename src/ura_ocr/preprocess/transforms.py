@@ -277,6 +277,35 @@ def maybe_invert_for_dark_bg(
 
     return ensure_rgb(img).copy()
 
+def crop_vertical_band(
+    img: Image.Image,
+    y1_ratio: float,
+    y2_ratio: float,
+) -> Image.Image:
+    """
+    Crop a vertical band from y1_ratio to y2_ratio.
+
+    Example:
+    - 0.00, 0.50 = top half
+    - 0.50, 1.00 = bottom half
+    - 0.30, 1.00 = middle-bottom area
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    y1_ratio = max(0.0, min(1.0, y1_ratio))
+    y2_ratio = max(0.0, min(1.0, y2_ratio))
+
+    if y2_ratio <= y1_ratio:
+        y1_ratio, y2_ratio = 0.0, 1.0
+
+    y1 = int(round(h * y1_ratio))
+    y2 = int(round(h * y2_ratio))
+
+    y1 = max(0, min(h - 1, y1))
+    y2 = max(y1 + 1, min(h, y2))
+
+    return img.crop((0, y1, w, y2))
 
 def make_preprocess_variants(
     img: Image.Image,
@@ -324,5 +353,33 @@ def make_preprocess_variants(
         "left_55_resize_960": resize_long_side(left_55, long_side=960),
         "right_55_resize_960": resize_long_side(right_55, long_side=960),
     }
+        # Expanded vertical crop grid.
+    # These variants test whether OCR improves when focusing on likely text bands.
+    band_specs = {
+        "top_35": (0.00, 0.35),
+        "top_50": (0.00, 0.50),
+        "upper_60": (0.00, 0.60),
+
+        "bottom_35": (0.65, 1.00),
+        "bottom_50": (0.50, 1.00),
+        "bottom_60": (0.40, 1.00),
+
+        "center_70": (0.15, 0.85),
+
+        "middle_bottom_70": (0.30, 1.00),
+        "middle_bottom_60": (0.40, 1.00),
+    }
+
+    for band_name, (y1, y2) in band_specs.items():
+        crop = crop_vertical_band(img, y1_ratio=y1, y2_ratio=y2)
+        variants[f"{band_name}_resize_960"] = resize_long_side(crop, long_side=960)
+
+    # A few CLAHE-on-crop variants only for promising regions.
+    # Do not run all of these by default; use them only in focused ablation.
+    for band_name in ["bottom_50", "bottom_60", "middle_bottom_70"]:
+        y1, y2 = band_specs[band_name]
+        crop = crop_vertical_band(img, y1_ratio=y1, y2_ratio=y2)
+        crop_960 = resize_long_side(crop, long_side=960)
+        variants[f"{band_name}_resize_960_clahe"] = apply_clahe_rgb(crop_960)
 
     return variants
