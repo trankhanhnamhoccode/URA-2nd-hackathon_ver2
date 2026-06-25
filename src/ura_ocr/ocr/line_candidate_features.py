@@ -56,6 +56,22 @@ BASE_NUM_COLS = [
 ]
 
 
+RAW_REL_COLS = [
+    "raw_text_len",
+    "raw_word_count",
+    "raw_num_lines",
+    "raw_avg_line_score",
+    "raw_digit_ratio",
+    "raw_alpha_ratio",
+    "raw_junk_ratio",
+    "rel_text_len_vs_raw",
+    "rel_word_count_vs_raw",
+    "rel_num_lines_vs_raw",
+    "delta_score_vs_raw",
+    "delta_junk_vs_raw",
+]
+
+
 def clean_val(x: Any) -> str:
     if x is None:
         return ""
@@ -146,7 +162,16 @@ def add_candidate_text_features(df: pd.DataFrame) -> pd.DataFrame:
 def add_raw_relative_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
+    # Critical: this function can be called more than once.
+    # Drop old raw-relative columns first to avoid pandas merge suffixes: raw_text_len_x/raw_text_len_y.
+    df = df.drop(columns=[c for c in RAW_REL_COLS if c in df.columns], errors="ignore")
+
     raw = df[df["candidate_name"] == "variant::raw"].copy()
+
+    if raw.empty:
+        for col in RAW_REL_COLS:
+            df[col] = np.nan
+        return df
 
     raw_feats = raw[
         [
@@ -174,6 +199,18 @@ def add_raw_relative_features(df: pd.DataFrame) -> pd.DataFrame:
     raw_feats = raw_feats.drop_duplicates("image_id")
 
     df = df.merge(raw_feats, on="image_id", how="left")
+
+    for col in [
+        "raw_text_len",
+        "raw_word_count",
+        "raw_num_lines",
+        "raw_avg_line_score",
+        "raw_digit_ratio",
+        "raw_alpha_ratio",
+        "raw_junk_ratio",
+    ]:
+        if col not in df.columns:
+            df[col] = np.nan
 
     df["rel_text_len_vs_raw"] = df["text_len"] / df["raw_text_len"].fillna(0.0).add(1.0)
     df["rel_word_count_vs_raw"] = df["word_count"] / df["raw_word_count"].fillna(0.0).add(1.0)
