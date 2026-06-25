@@ -177,7 +177,7 @@ def main():
     model.fit(X_train, y_train)
 
     test_df["pred_cer"] = model.predict(X_test)
-    test_df["pred_cer"] = test_df["pred_cer"].clip(min=0.0)
+    test_df["pred_cer"] = test_df["pred_cer"].clip(lower=0.0)
 
     mae = mean_absolute_error(y_test, test_df["pred_cer"])
 
