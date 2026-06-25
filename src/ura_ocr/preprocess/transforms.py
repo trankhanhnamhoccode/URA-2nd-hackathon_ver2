@@ -89,6 +89,100 @@ def resize_long_side(
 
     return img.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
+def crop_top_ratio(
+    img: Image.Image,
+    ratio: float = 0.45,
+) -> Image.Image:
+    """
+    Crop the top part of the image.
+
+    Useful when overlay text appears near the top.
+    Example: captions/title text.
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    ratio = max(0.05, min(1.0, ratio))
+    y2 = max(1, int(round(h * ratio)))
+
+    return img.crop((0, 0, w, y2))
+
+
+def crop_bottom_ratio(
+    img: Image.Image,
+    ratio: float = 0.45,
+) -> Image.Image:
+    """
+    Crop the bottom part of the image.
+
+    Useful when product/title text appears near the lower area.
+    Example: TikTok thumbnail subtitles, product labels, review banners.
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    ratio = max(0.05, min(1.0, ratio))
+    y1 = min(h - 1, int(round(h * (1.0 - ratio))))
+
+    return img.crop((0, y1, w, h))
+
+
+def crop_center_ratio(
+    img: Image.Image,
+    ratio: float = 0.60,
+) -> Image.Image:
+    """
+    Crop the center vertical region of the image.
+
+    Useful when main text/product is around the middle.
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    ratio = max(0.05, min(1.0, ratio))
+    crop_h = int(round(h * ratio))
+    crop_h = max(1, min(h, crop_h))
+
+    y1 = max(0, (h - crop_h) // 2)
+    y2 = min(h, y1 + crop_h)
+
+    return img.crop((0, y1, w, y2))
+
+
+def crop_left_ratio(
+    img: Image.Image,
+    ratio: float = 0.55,
+) -> Image.Image:
+    """
+    Crop the left part of the image.
+
+    Useful when text/product packaging is on the left side.
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    ratio = max(0.05, min(1.0, ratio))
+    x2 = max(1, int(round(w * ratio)))
+
+    return img.crop((0, 0, x2, h))
+
+
+def crop_right_ratio(
+    img: Image.Image,
+    ratio: float = 0.55,
+) -> Image.Image:
+    """
+    Crop the right part of the image.
+
+    Useful when text/product packaging is on the right side.
+    """
+    img = ensure_rgb(img)
+    w, h = img.size
+
+    ratio = max(0.05, min(1.0, ratio))
+    x1 = min(w - 1, int(round(w * (1.0 - ratio))))
+
+    return img.crop((x1, 0, w, h))
 
 def apply_clahe_rgb(
     img: Image.Image,
@@ -191,22 +285,44 @@ def make_preprocess_variants(
     Generate preprocessing variants for visual inspection and OCR ablation.
 
     No variant is assumed to be universally best.
+
+    Variant groups:
+    - full-image variants: raw / resize / contrast
+    - crop variants: focus on common text regions in TikTok thumbnails
     """
     img = ensure_rgb(img)
 
     resize_960 = resize_long_side(img, long_side=960)
     resize_1280 = resize_long_side(img, long_side=1280)
 
+    top_45 = crop_top_ratio(img, ratio=0.45)
+    bottom_45 = crop_bottom_ratio(img, ratio=0.45)
+    center_60 = crop_center_ratio(img, ratio=0.60)
+    left_55 = crop_left_ratio(img, ratio=0.55)
+    right_55 = crop_right_ratio(img, ratio=0.55)
+
     variants = {
+        # Full image baseline variants
         "raw": img.copy(),
         "resize_960": resize_960,
         "resize_1280": resize_1280,
         "clahe": apply_clahe_rgb(img),
         "resize_960_clahe": apply_clahe_rgb(resize_960),
+
+        # Conservative extra variants
         "gray": to_grayscale_rgb(img),
         "autocontrast": autocontrast_rgb(img),
         "sharpen": sharpen_light(img),
         "dark_bg_invert": maybe_invert_for_dark_bg(img),
+
+        # Spatial crop variants
+        "top_45_resize_960": resize_long_side(top_45, long_side=960),
+        "bottom_45_resize_960": resize_long_side(bottom_45, long_side=960),
+        "center_60_resize_960": resize_long_side(center_60, long_side=960),
+
+        # Optional horizontal crop variants
+        "left_55_resize_960": resize_long_side(left_55, long_side=960),
+        "right_55_resize_960": resize_long_side(right_55, long_side=960),
     }
 
     return variants
